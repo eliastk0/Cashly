@@ -1,28 +1,32 @@
+import { Feather, MaterialIcons } from "@expo/vector-icons";
+import * as ImagePicker from "expo-image-picker";
+import { useRouter } from "expo-router";
 import React, { useState } from "react";
 import {
+  Image,
+  ScrollView,
   StyleSheet,
   Text,
-  View,
-  Image,
   TextInput,
   TouchableOpacity,
-  ScrollView,
-  Alert,
+  View,
 } from "react-native";
-import { MaterialIcons, Feather } from "@expo/vector-icons";
-import * as ImagePicker from 'expo-image-picker';
-
+import { useAuth } from "../../contexts/auth";
 export default function EditProfileScreen() {
-  const [nome, setNome] = useState("Josefa");
-  const [email, setEmail] = useState("josefa@gmail.com");
-  const [senha, setSenha] = useState("12345678");
-  const [profileImage, setProfileImage] = useState('https://via.placeholder.com/150');
+  const { user, saveUser } = useAuth();
+  const router = useRouter();
+
+  const [nome, setNome] = useState(user?.nome ?? "");
+  const [email, setEmail] = useState(user?.email ?? "");
+  const [senha, setSenha] = useState("");
+  const [profileImage, setProfileImage] = useState(user?.foto ?? "https://via.placeholder.com/150");
+  const [erro, setErro] = useState("");
 
   const pickImage = async () => {
     const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync();
-    
-    if (status !== 'granted') {
-      Alert.alert('Permissão Necessária', 'Precisamos de acesso às suas fotos.');
+
+    if (status !== "granted") {
+      setErro("Permissão de acesso às fotos negada.");
       return;
     }
 
@@ -35,8 +39,30 @@ export default function EditProfileScreen() {
 
     if (!result.canceled) {
       setProfileImage(result.assets[0].uri);
+      setErro("");
     }
   };
+
+  function handleSalvar() {
+    if (!nome || !email) {
+      setErro("Nome e email são obrigatórios.");
+      return;
+    }
+
+    saveUser({
+      id: user?.id ?? "",
+      nome,
+      email,
+      foto: profileImage,
+    });
+
+    setErro("");
+    router.back(); 
+  }
+
+  function handleSair() {
+    router.replace("/login");
+  }
 
   return (
     <View style={styles.container}>
@@ -51,40 +77,43 @@ export default function EditProfileScreen() {
             </View>
           </TouchableOpacity>
 
+          {/* Mensagem de erro */}
+          {erro ? <Text style={styles.erro}>{erro}</Text> : null}
+
           <View style={styles.form}>
             <Text style={styles.label}>Nome</Text>
-            <TextInput 
-              style={styles.input} 
-              value={nome} 
-              onChangeText={setNome} 
+            <TextInput
+              style={styles.input}
+              value={nome}
+              onChangeText={(text) => { setNome(text); setErro(""); }}
               placeholderTextColor="#888"
             />
 
             <Text style={styles.label}>Email</Text>
-            <TextInput 
-              style={styles.input} 
-              value={email} 
-              onChangeText={setEmail} 
-              keyboardType="email-address" 
+            <TextInput
+              style={styles.input}
+              value={email}
+              onChangeText={(text) => { setEmail(text); setErro(""); }}
+              keyboardType="email-address"
               placeholderTextColor="#888"
             />
 
             <Text style={styles.label}>Senha</Text>
-            <TextInput 
-              style={styles.input} 
-              value={senha} 
-              onChangeText={setSenha} 
-              secureTextEntry 
+            <TextInput
+              style={styles.input}
+              value={senha}
+              onChangeText={(text) => { setSenha(text); setErro(""); }}
+              secureTextEntry
               placeholderTextColor="#888"
             />
 
-            <TouchableOpacity style={styles.saveButton}>
+            <TouchableOpacity style={styles.saveButton} onPress={handleSalvar}>
               <Text style={styles.saveButtonText}>Salvar</Text>
             </TouchableOpacity>
           </View>
         </View>
 
-        <TouchableOpacity style={styles.logoutButton}>
+        <TouchableOpacity style={styles.logoutButton} onPress={handleSair}>
           <MaterialIcons name="power-settings-new" size={24} color="#FF4444" />
           <Text style={styles.logoutText}>Sair da conta</Text>
         </TouchableOpacity>
@@ -94,93 +123,99 @@ export default function EditProfileScreen() {
 }
 
 const styles = StyleSheet.create({
-  container: { 
-    flex: 1, 
-    backgroundColor: "#000" 
+  container: {
+    flex: 1,
+    backgroundColor: "#000",
   },
-  scrollContent: { 
-    paddingBottom: 40, 
-    alignItems: "center", 
-    paddingTop: 50 
+  scrollContent: {
+    paddingBottom: 40,
+    alignItems: "center",
+    paddingTop: 50,
   },
-  headerTitle: { 
-    color: "#FFF", 
-    fontSize: 22, 
-    fontWeight: "bold", 
-    marginBottom: 20 
+  headerTitle: {
+    color: "#FFF",
+    fontSize: 22,
+    fontWeight: "bold",
+    marginBottom: 20,
   },
-  profileCard: { 
-    width: "90%", 
-    borderWidth: 2, 
-    borderColor: "#007AFF", 
-    borderRadius: 25, 
-    padding: 20, 
-    alignItems: "center" 
+  profileCard: {
+    width: "90%",
+    borderWidth: 2,
+    borderColor: "#007AFF",
+    borderRadius: 25,
+    padding: 20,
+    alignItems: "center",
   },
-  imageContainer: { 
-    position: "relative", 
-    marginBottom: 20 
+  imageContainer: {
+    position: "relative",
+    marginBottom: 20,
   },
-  profileImage: { 
-    width: 120, 
-    height: 120, 
-    borderRadius: 60, 
-    borderWidth: 2, 
-    borderColor: "#444" 
+  profileImage: {
+    width: 120,
+    height: 120,
+    borderRadius: 60,
+    borderWidth: 2,
+    borderColor: "#444",
   },
-  editIconContainer: { 
-    position: "absolute", 
-    bottom: 0, 
-    right: 5, 
-    backgroundColor: "#5CD338", 
-    padding: 8, 
-    borderRadius: 15, 
-    borderWidth: 2, 
-    borderColor: "#000" 
+  editIconContainer: {
+    position: "absolute",
+    bottom: 0,
+    right: 5,
+    backgroundColor: "#5CD338",
+    padding: 8,
+    borderRadius: 15,
+    borderWidth: 2,
+    borderColor: "#000",
   },
-  form: { 
-    width: "100%" 
+  erro: {
+    color: "#FF4444",
+    fontSize: 14,
+    marginBottom: 10,
+    textAlign: "center",
   },
-  label: { 
-    color: "#FFF", 
-    fontSize: 16, 
-    fontWeight: "bold", 
-    marginBottom: 8, 
-    marginTop: 15 
+  form: {
+    width: "100%",
   },
-  input: { 
-    backgroundColor: "#1C1C1C", 
-    color: "#FFF", 
-    borderRadius: 12, 
-    height: 50, 
-    paddingHorizontal: 15, 
-    fontSize: 16 
+  label: {
+    color: "#FFF",
+    fontSize: 16,
+    fontWeight: "bold",
+    marginBottom: 8,
+    marginTop: 15,
   },
-  saveButton: { 
-    backgroundColor: "#5CD338", 
-    height: 55, 
-    borderRadius: 15, 
-    justifyContent: "center", 
-    alignItems: "center", 
-    marginTop: 30 
+  input: {
+    backgroundColor: "#1C1C1C",
+    color: "#FFF",
+    borderRadius: 12,
+    height: 50,
+    paddingHorizontal: 15,
+    fontSize: 16,
   },
-  saveButtonText: { 
-    color: "#FFF", 
-    fontSize: 18, 
-    fontWeight: "bold" 
+  saveButton: {
+    backgroundColor: "#5CD338",
+    height: 55,
+    borderRadius: 15,
+    justifyContent: "center",
+    alignItems: "center",
+    marginTop: 30,
   },
-  logoutButton: { 
-    flexDirection: "row", 
-    alignItems: "center", 
-    backgroundColor: "#111", 
-    width: "90%", 
-    padding: 15, 
-    borderRadius: 15, 
-    marginTop: 20 
+  saveButtonText: {
+    color: "#FFF",
+    fontSize: 18,
+    fontWeight: "bold",
   },
-  logoutText: { 
-    color: "#FF4444", 
-    marginLeft: 10, 
-    fontSize: 16 
+  logoutButton: {
+    flexDirection: "row",
+    alignItems: "center",
+    backgroundColor: "#111",
+    width: "90%",
+    padding: 15,
+    borderRadius: 15,
+    marginTop: 20,
+  },
+  logoutText: {
+    color: "#FF4444",
+    marginLeft: 10,
+    fontSize: 16,
   },
 });
