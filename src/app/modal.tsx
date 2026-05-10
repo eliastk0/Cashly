@@ -17,7 +17,7 @@ export default function Modal() {
         <TouchableOpacity
           style={styles.despesa}
           onPress={() => {
-            router.push("/expense");
+            router.replace("/expense");
           }}
         >
           <View style={styles.icon}>
@@ -30,7 +30,7 @@ export default function Modal() {
         <TouchableOpacity
           style={styles.receita}
           onPress={() => {
-            router.push("/revenue");
+            router.replace("/income");
           }}
         >
           <View style={styles.icon}>
